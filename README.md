@@ -12,7 +12,7 @@ My lambda calculus study notes.
 
 My notes on various fixpoint combinators.
 
-### divisor_lattice ###
+### divisor-lattice ###
 
 Functions for drawing the divisor lattice given some natural number.
 
