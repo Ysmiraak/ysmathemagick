@@ -1,7 +1,5 @@
-(defmacro λ
-  "lambda expression"
-  [f & args]
-  `(fn [~f] ~@args))
+(ns ysmathemagick.Y-combinator
+  (:use [ysmathemagick.core :only [λ]]))
 
 (defn factorial
   "a typical recursive factorial function"

@@ -4,7 +4,17 @@ My math exercises in Clojure.
 
 ## Usage
 
-FIXME
+### core ###
+
+My lambda calculus study notes.
+
+### Y-combinator ###
+
+My notes on various fixpoint combinators.
+
+### divisor_lattice ###
+
+Functions for drawing the divisor lattice given some natural number.
 
 ## License
 

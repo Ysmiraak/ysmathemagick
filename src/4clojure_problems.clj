@@ -1,46 +1,22 @@
-(defn fac
-  ([n] (fac n 1))
-  ([n r]
-   (if (zero? n)
-     r
-     (recur (dec n) (*' r n)))))
+(def r5 (math/sqrt 5))
 
-(defn dfs
-  [graph goal]
-  (fn search
-    [path visited]
-    (let [current (peek path)]
-      (if (= goal current)
-        [path]
-        (->> current graph keys
-             (remove visited)
-             (mapcat #(search (conj path %) (conj visited %))))))))
-
-(defn findpath
-  [graph start goal]
-  ((dfs graph goal) [start] #{start}))
-
-(def graph 
-  {:s {:a 3 :d 4}
-   :a {:s 3 :d 5 :b 4}
-   :b {:a 4 :e 5 :c 4} 
-   :c {:b 4} 
-   :d {:s 4 :a 5 :e 2} 
-   :e {:d 2 :b 5 :f 4} 
-   :f {:e 4 :g 1}})
-
-(findpath graph :s :g)
-
-
+(defn a [n]
+  (math/round
+   (* (/ 1 r5)
+      (- (math/expt (/ (+ 1 r5) 2) n)
+         (math/expt (/ (- 1 r5) 2) n)))))
 
 (def fib-lazy-cat
   (lazy-cat [0 1] (map +' fib-lazy-cat (rest fib-lazy-cat))))
+
 (def fib-self-seq
   (cons 0 (cons 1 (lazy-seq (map +' fib-self-seq (rest fib-self-seq))))))
+
 (def fib-lazy-seq
   ((fn fib [a b]
      (lazy-seq (cons a (fib b (+' a b)))))
    0 1))
+
 (def fib-iterate
   (#(map first
         (iterate (fn [[a b]] [b (+' a b)])
@@ -104,12 +80,3 @@
 (fn [f & l]
   (let [g (group-by first (apply concat (map #(apply list %) l)))]
     (zipmap (keys g) (map #(reduce f (map second %)) (vals g)))))
-
-
-
-(defmacro if-valid
-  "Handle validation more concisely"
-  [to-validate validations errors-name & then-else]
-  `(let [~errors-name (validate ~to-validate ~validations)]
-     (if (empty? ~errors-name)
-       ~@then-else)))
