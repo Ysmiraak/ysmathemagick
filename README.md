@@ -8,7 +8,7 @@ My math exercises in Clojure.
 
 My lambda calculus study notes.
 
-### Y-combinator ###
+### Y ###
 
 My notes on various fixpoint combinators.
 
