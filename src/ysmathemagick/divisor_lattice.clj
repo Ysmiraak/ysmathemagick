@@ -1,44 +1,32 @@
-(ns ysmathemagick.divisor_lattice
-  (:require [clojure.math.numeric-tower :as math]
-            [clojure.math.combinatorics :as comb]))
+(ns ysmathemagick.divisor_lattice)
 
-(defn print-to-dot [s]
+(defn print-to-dot [m]
   "http://sandbox.kidstrythisathome.com/erdos/"
   (println "digraph g {")
-  (doseq [[v w] s]
-    (println v "->" w \;))
+  (doseq [e m v (val e)]
+    (println v "->" (key e) \;))
   (println \}))
 
 (defn find-divisors [n]
   (->> (range 1 (inc n))
        (map #(/ n %))
-       (filterv #(= 0 (mod % 1)))))
+       (filterv #(zero? (mod % 1)))))
 
-(defn find-ordering [vertices]
-  (letfn
-      [(divisor? [n] (fn [m] (= 0 (mod n m))))
-       
-       (add [v edges w]
-         (if (empty? (->> edges
-                          (filter #(= w (second %)))
-                          (map first)
-                          (filter (divisor? v))))
-           (dfs (conj edges [v w]) w)
-           edges))
-       
-       (dfs [edges vertex]
-         (reduce (partial add vertex)
-                 edges
-                 (->> vertices
-                      (drop-while #(>= % vertex))
-                      (filter (divisor? vertex)))))]
-    
-      (dfs #{} (first vertices))))
+(defn find-ordering [vs]
+  (letfn [(divisor? [n] (fn [m] (zero? (mod n m))))
+          (up-edges [vs v] (if (vector? vs) (conj vs v) [v]))
+          (add [v w-vs w]
+            (if (not-any? (divisor? v) (w-vs w))
+              (dfs (update w-vs w up-edges v) w)
+              w-vs))
+          (dfs [w-vs v]
+            (reduce (partial add v) w-vs
+                    (->> vs
+                         (drop-while #(>= % v))
+                         (filter (divisor? v)))))]
+    (dfs {} (first vs))))
 
-
-
-(def vertices (find-divisors 90))
-
-(def edges (find-ordering vertices))
-
-(print-to-dot edges)
+(-> 180
+    find-divisors
+    find-ordering
+    print-to-dot)

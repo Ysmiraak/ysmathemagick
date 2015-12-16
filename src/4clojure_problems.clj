@@ -1,3 +1,6 @@
+(require '[clojure.math.numeric-tower :as math]
+         '[clojure.math.combinatorics :as comb])
+
 (def r5 (math/sqrt 5))
 
 (defn a [n]
