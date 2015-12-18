@@ -12,9 +12,9 @@ My lambda calculus study notes.
 
 My notes on various fixpoint combinators.
 
-### divisor-lattice ###
+### hasse-diagram ###
 
-Functions for drawing the divisor lattice given some natural number.
+Functions for drawing Hasse diagrams when a relation function and the vertices are given.
 
 ## License
 
