@@ -3,12 +3,17 @@
   (:use clojure.core.logic)
   (:require [clojure.core.logic.fd :as fd]))
 
+;; Eine Studenten-WG hat fünf Zimmer nebeneinander. Das erste Zimmer
+;; ist ganz links. In jedem Zimmer wohnt ein Student. Alle Studenten
+;; haben verschiedene Vornamen und studieren verschiedene Fächer in
+;; verschiedenen Semestern. Sie kommen aus verschiedenen Städten und
+;; ihre Zimmer sind unterschiedlich gestrichen.
+
 (def room-numbers (fd/domain 1 2 3 4 5))
 
 (def students (->> (repeatedly (* 5 6) lvar) (partition 6) (mapv vec)))
 
-(let [[names rooms semesters subjects wall-colors home-cities]
-      (apply map vector students)]
+(let [[names rooms semesters subjects wall-colors home-cities] (apply map vector students)]
   (def names names)
   (def rooms rooms)
   (def semester semesters)
