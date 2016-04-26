@@ -28,16 +28,18 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defn ->student
+  "Returns a map with six fields representing a student. New logical
+  variables are created as values for any of the missing fields:
+  :name :room :semester :subject :wall-color :home-city"
   [& {:keys [name room subject semester wall-color home-city] :as student}]
   (apply assoc student
          (interleave (reduce disj #{:name :room :semester :subject :wall-color :home-city}
                              (keys student))
                      (repeatedly lvar))))
 
-(defn solve-wg-problem [n]
-  (let [room-dom  (fd/domain 1 2 3 4 5)
-        students  (repeatedly 5 ->student)
-        rooms     (map :room students)
+(defn solve-wg-problem
+  "Finds n solutions." [n]
+  (let [students  (mapv #(->student :room %) (range 1 6))
         studento  #(membero (apply ->student %&) students)
         neighboro (fn [s1 s2 & {d :direction :or {d :both}}]
                     (let [s1 (apply ->student s1), r1 (:room s1)
@@ -53,8 +55,6 @@
                                  ((fd/- r1 r2 1)))))))]
     (run n [q]
       (== q students)
-      (everyg #(fd/dom % room-dom) rooms)
-      (fd/distinct rooms)
       ;; Einer der Studenten kommt aus Tübingen. Wie heißt er/sie?
       (studento :home-city "Tübingen")
       ;; (a) Anna studiert im ersten Semester.
@@ -90,12 +90,10 @@
 
 ;; (solve-wg-problem 1)
 
-(def results (solve-wg-problem (int (Math/pow 5 6))))
+(def solutions (solve-wg-problem (reduce * (repeat 6 5))))
 
-;; (count results) 120
-;; (def unique-results (set (map set results)))
-;; (count unique-results) 1
-;; (vec (sort-by :room (first unique-results)))
+;; (count solutions) 1
+;; (first solutions)
 [{:home-city "Hamburg", :name "Jonas", :wall-color "blau", :room 1, :subject "Medizininformatik", :semester 4}
  {:home-city "Stuttgart", :name "Petra", :wall-color "gelb", :room 2, :subject "Kognitionswissenschaft", :semester 2}
  {:home-city "Frankfurt", :name "Anna", :wall-color "weiß", :room 3, :subject "Bioinformatik", :semester 1}
