@@ -12,6 +12,10 @@ My lambda calculus study notes.
 
 My notes on various fixpoint combinators.
 
+### statistics ###
+
+Functions for statistical analysis.
+
 ### hasse-diagram ###
 
 Functions for drawing Hasse diagrams when a relation function and the vertices are given.
