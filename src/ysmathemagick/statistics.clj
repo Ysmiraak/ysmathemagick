@@ -46,8 +46,8 @@
   " [sample population-mean population-sd
      & {:keys [alpha two-sided?] :or {alpha 0.01 two-sided? false}}]
   (let [sample-mean (s/mean sample)
-        SDM (/ population-sd (m/sqrt (count sample)))
-        Z (/ (- sample-mean population-mean) SDM)
+        RMSE (/ population-sd (m/sqrt (count sample)))
+        Z (/ (- sample-mean population-mean) RMSE)
         p (* (if two-sided? 1 2) (- 1 (incanter.stats/cdf-normal (m/abs Z))))
         reject (< p alpha)
         Cohen-s_d (/ (- sample-mean population-mean) population-sd)]
@@ -72,8 +72,6 @@
         p (t->p t DF two-sided?)
         reject (< p alpha)]
     (table reject p t DF)))
-
-
 
 (defn paired-t-test "
   Test the hypothesis that there is no difference between the two
@@ -103,15 +101,16 @@
   " [sample-1 sample-2
      & {:keys [alpha two-sided? pooled?]
         :or {alpha 0.01 two-sided? false pooled? false}}]
-  (let [[size-1 size-2 mean-1 mean-2 var-1 var-2]
-        (for [f [count s/mean s/variance]
+  (let [variance-of-the-mean #(/ (s/variance %) (count %))
+        [size-1 size-2 mean-1 mean-2 mean-var-1 mean-var-2]
+        (for [f [count s/mean variance-of-the-mean]
               s [sample-1 sample-2]] (f s))
         DF (if pooled?
              (- (+ size-1 size-2) 2)
-             (/ (m/pow (+ var-1 var-2) 2)
-                (+ (/ (m/pow var-1 2) (dec size-1))
-                   (/ (m/pow var-2 2) (dec size-2)))))
-        t (/ (- mean-1 mean-2) (m/sqrt (+ var-1 var-2)))
+             (/ (m/pow (+ mean-var-1 mean-var-2) 2)
+                (+ (/ (m/pow mean-var-1 2) (dec size-1))
+                   (/ (m/pow mean-var-2 2) (dec size-2)))))
+        t (/ (- mean-1 mean-2) (m/sqrt (+ mean-var-1 mean-var-2)))
         p (t->p t DF two-sided?)
         reject (< p alpha)]
     (table reject p t DF)))
