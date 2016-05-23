@@ -35,32 +35,54 @@
                      (+ precision recall))]
     (table precision recall accuracy f1-score)))
 
+(defn fake-sample
+  "Returns a vector of numbers with size (minimally 2), mean, and sd."
+  [size mean sd]
+  (assert (<= 2 size))
+  (let [oddity (mod size 2)
+        size (- size oddity)
+        deviation (* sd (Math/sqrt (/ (+ size -1 oddity) size)))]
+    (->> (map #((if (even? %) + -) mean deviation) (range size))
+         (concat (repeat oddity mean))
+         (into []))))
+
+(defn v->p "
+  Calculates the p-value from some other value v in
+  distribution ∈ {:t, :norm, :chi-sq}.
+  " [distribution v
+     & {:keys [DF two-sided?] :or {DF 1 two-sided? false}}]
+  (let [CDF (case distribution
+              :t incanter.stats/cdf-t
+              :norm incanter.stats/cdf-normal
+              :chi-sq incanter.stats/cdf-chisq)
+        prob (CDF (Math/abs (double v)) :df DF)]
+    (* (if two-sided? 1 2) (- 1 prob))))
+
 (defn Z-test "
   Test the hypothesis that the sample comes from the normmally distributed population.
 
-  (Z-test [100 105 104 105 107 110 99 111 106 105] 100 13.04) =>
+  (Z-test [100 105 104 105 107 110 99 111 106 105] 100 13.04)
+  =>
   {:reject false, :p 0.20729768969012463, :Z 1.2610309687788017, :Cohen-s_d 0.39877300613496935}
   
-  (Z-test (repeat 100 105.2) 100 13.04) =>
+  (Z-test (repeat 100 105.2) 100 13.04)
+  =>
   {:reject true, :p 6.670850363388325E-5, :Z 3.9877300613497506, :Cohen-s_d 0.398773006134975}
   " [sample population-mean population-sd
      & {:keys [alpha two-sided?] :or {alpha 0.01 two-sided? false}}]
   (let [sample-mean (s/mean sample)
         RMSE (/ population-sd (m/sqrt (count sample)))
         Z (/ (- sample-mean population-mean) RMSE)
-        p (* (if two-sided? 1 2) (- 1 (incanter.stats/cdf-normal (m/abs Z))))
+        p (v->p :norm Z :two-sided? two-sided?)
         reject (< p alpha)
         Cohen-s_d (/ (- sample-mean population-mean) population-sd)]
     (table reject p Z Cohen-s_d)))
 
-(defn- t->p [t DF two-sides?]
-  (* (if two-sides? 1 2)
-     (- 1 (incanter.stats/cdf-t (m/abs t) :df DF))))
-
 (defn t-test
   "Test the hypothesis that the sample comes from the normmally distributed population.
 
-  (t-test [100 105 104 105 107 110 99 111 106 105] 100) =>
+  (t-test [100 105 104 105 107 110 99 111 106 105] 100)
+  =>
   {:reject true, :p 0.0018045343966888172, :t 4.367161585455664, :DF 9}
   " [sample population-mean
      & {:keys [alpha two-sided?] :or {alpha 0.01 two-sided? false}}]
@@ -69,7 +91,7 @@
         DF (dec sample-size)
         SEM (/ sample-sd (m/sqrt sample-size))
         t (/ (- sample-mean population-mean) SEM)
-        p (t->p t DF two-sided?)
+        p (v->p :t t :DF DF :two-sided? two-sided?)
         reject (< p alpha)]
     (table reject p t DF)))
 
@@ -89,7 +111,7 @@
         DF (dec sample-size)
         SEM (/ diff-sd (m/sqrt sample-size))
         t (/ diff-mean SEM)
-        p (t->p t DF two-sided?)
+        p (v->p :t t :DF DF :two-sided? two-sided?)
         reject (< p alpha)]
     (table reject p t DF)))
 
@@ -97,7 +119,9 @@
   Test the hypothesis that there is no difference between the
   population (normally distributed) means of two independent samples.
   
-  
+  (two-sample-t-test (fake-sample 8 190 9) (fake-sample 10 105 13))
+  =>
+  {:reject true, :p 2.680522470654978E-11,:t 16.350689614778208, :DF 15.747261049437471}
   " [sample-1 sample-2
      & {:keys [alpha two-sided? pooled?]
         :or {alpha 0.01 two-sided? false pooled? false}}]
@@ -111,6 +135,34 @@
                 (+ (/ (m/pow mean-var-1 2) (dec size-1))
                    (/ (m/pow mean-var-2 2) (dec size-2)))))
         t (/ (- mean-1 mean-2) (m/sqrt (+ mean-var-1 mean-var-2)))
-        p (t->p t DF two-sided?)
+        p (v->p :t t :DF DF :two-sided? two-sided?)
         reject (< p alpha)]
     (table reject p t DF)))
+
+(defn chi-square-test "
+  Test the hypothesis that two categorical properties are independent.
+  
+  (chi-square-test [[25 25][15 35]] :alpha 0.05 :two-sided? true)
+  =>
+  {:reject true, :p 0.041226833337163815, :chi-sq 25/6, :DF 1}
+  " [contingency-table
+     & {:keys [alpha two-sided?]
+        :or {alpha 0.01 two-sided? false}}]
+  (assert (apply = (map count contingency-table)))
+  (let [row-count (count contingency-table)
+        col-count (count (first contingency-table))
+        DF (* (dec row-count) (dec col-count))
+        sum (reduce + (flatten contingency-table))
+        chi-sq
+        (reduce +
+                (for [i (range row-count)
+                      j (range col-count)]
+                  (let [observed (-> contingency-table (nth i) (nth j))
+                        expected (/ (* (reduce + (nth contingency-table i))
+                                       (reduce + (map #(nth % j) contingency-table)))
+                                    sum)
+                        diff (- observed expected)]
+                    (/ (* diff diff) expected))))
+        p (v->p :chi-sq chi-sq :DF DF :two-sided? two-sided?)
+        reject (< p alpha)]
+    (table reject p chi-sq DF)))
