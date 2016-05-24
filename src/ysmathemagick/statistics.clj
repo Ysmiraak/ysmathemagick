@@ -1,9 +1,10 @@
 (ns ysmathemagick.statistics
-  (:require [clojure.core.matrix :as m]
-            (clojure.core.matrix
-             ;; operators linear dataset selection random
-             [stats :as s])
-            incanter.stats))
+  (:require
+   [clojure.core.matrix :as m]
+   (clojure.core.matrix
+    ;; operators linear dataset selection random
+    [stats :as s])
+   incanter.stats))
 
 (defmacro table
   "(let [a 1 b 2 c 3] (table a b c)) => {:a 1, :b 2, :c 3}"
@@ -41,7 +42,7 @@
   (assert (<= 2 size))
   (let [oddity (mod size 2)
         size (- size oddity)
-        deviation (* sd (Math/sqrt (/ (+ size -1 oddity) size)))]
+        deviation (* sd (m/sqrt (/ (+ size -1 oddity) size)))]
     (->> (map #((if (even? %) + -) mean deviation) (range size))
          (concat (repeat oddity mean))
          (into []))))
@@ -55,42 +56,44 @@
               :t incanter.stats/cdf-t
               :norm incanter.stats/cdf-normal
               :chi-sq incanter.stats/cdf-chisq)
-        prob (CDF (Math/abs (double v)) :df DF)]
+        prob (CDF (m/abs v) :df DF)]
     (* (if two-sided? 1 2) (- 1 prob))))
 
 (defn Z-test "
-  Test the hypothesis that the sample comes from the normmally distributed population.
+  Test the hypothesis that the sample of 'size and 'mean comes from
+  a normal distribution with 'μ and 'σ as parameters.
 
-  (Z-test [100 105 104 105 107 110 99 111 106 105] 100 13.04)
+  (Z-test 10 105 100 13)
   =>
-  {:reject false, :p 0.20729768969012463, :Z 1.2610309687788017, :Cohen-s_d 0.39877300613496935}
-  
-  (Z-test (repeat 100 105.2) 100 13.04)
+  {:reject false, :p 0.22388565069472577, :Z 1.2162606385262997, :Cohen-s_d 5/13}
+
+  (Z-test 100 105 100 13)
   =>
-  {:reject true, :p 6.670850363388325E-5, :Z 3.9877300613497506, :Cohen-s_d 0.398773006134975}
-  " [sample population-mean population-sd
+  {:reject true, :p 1.1998644089783461E-4, :Z 3.846153846153846, :Cohen-s_d 5/13}
+  " [size mean μ σ
      & {:keys [alpha two-sided?] :or {alpha 0.01 two-sided? false}}]
-  (let [sample-mean (s/mean sample)
-        RMSE (/ population-sd (m/sqrt (count sample)))
-        Z (/ (- sample-mean population-mean) RMSE)
+  (let [RMSE (/ σ (m/sqrt size))
+        Z (/ (- mean μ) RMSE)
         p (v->p :norm Z :two-sided? two-sided?)
         reject (< p alpha)
-        Cohen-s_d (/ (- sample-mean population-mean) population-sd)]
+        Cohen-s_d (/ (- mean μ) σ)]
     (table reject p Z Cohen-s_d)))
 
-(defn t-test
-  "Test the hypothesis that the sample comes from the normmally distributed population.
+(defn t-test "
+  Test the hypothesis that the sample of 'size, 'mean, and 'sd comes from
+  a normal distribution with 'μ as a parameter.
 
-  (t-test [100 105 104 105 107 110 99 111 106 105] 100)
+  (let [population-mean 100
+        sample [100 105 104 105 107 110 99 111 106 105]
+        [size mean sd] (map #(% sample) [count s/mean s/sd])]
+    (t-test size mean sd population-mean))
   =>
   {:reject true, :p 0.0018045343966888172, :t 4.367161585455664, :DF 9}
-  " [sample population-mean
+  " [size mean sd μ
      & {:keys [alpha two-sided?] :or {alpha 0.01 two-sided? false}}]
-  (let [[sample-size sample-mean sample-sd]
-        (map #(% sample) [count s/mean s/sd])
-        DF (dec sample-size)
-        SEM (/ sample-sd (m/sqrt sample-size))
-        t (/ (- sample-mean population-mean) SEM)
+  (let [DF (dec size)
+        SEM (/ sd (m/sqrt size))
+        t (/ (- mean μ) SEM)
         p (v->p :t t :DF DF :two-sided? two-sided?)
         reject (< p alpha)]
     (table reject p t DF)))
@@ -131,9 +134,9 @@
               s [sample-1 sample-2]] (f s))
         DF (if pooled?
              (- (+ size-1 size-2) 2)
-             (/ (m/pow (+ mean-var-1 mean-var-2) 2)
-                (+ (/ (m/pow mean-var-1 2) (dec size-1))
-                   (/ (m/pow mean-var-2 2) (dec size-2)))))
+             (/ (m/square (+ mean-var-1 mean-var-2))
+                (+ (/ (m/square mean-var-1) (dec size-1))
+                   (/ (m/square mean-var-2) (dec size-2)))))
         t (/ (- mean-1 mean-2) (m/sqrt (+ mean-var-1 mean-var-2)))
         p (v->p :t t :DF DF :two-sided? two-sided?)
         reject (< p alpha)]
@@ -149,20 +152,19 @@
      & {:keys [alpha two-sided?]
         :or {alpha 0.01 two-sided? false}}]
   (assert (apply = (map count contingency-table)))
-  (let [row-count (count contingency-table)
-        col-count (count (first contingency-table))
+  (let [rows contingency-table
+        cols (apply map vector rows)
+        [row-count row-sums col-count col-sums]
+        (for [t [rows cols] f [count #(map s/sum %)]] (f t))
+        total-sum (s/sum row-sums)
         DF (* (dec row-count) (dec col-count))
-        sum (reduce + (flatten contingency-table))
-        chi-sq
-        (reduce +
-                (for [i (range row-count)
-                      j (range col-count)]
-                  (let [observed (-> contingency-table (nth i) (nth j))
-                        expected (/ (* (reduce + (nth contingency-table i))
-                                       (reduce + (map #(nth % j) contingency-table)))
-                                    sum)
-                        diff (- observed expected)]
-                    (/ (* diff diff) expected))))
+        formula (fn [observed expected]
+                  (/ (m/square (- observed expected)) expected))
+        chi-sq (s/sum (map formula
+                           (for [row rows cell row] cell)
+                           (for [row-sum row-sums col-sum col-sums]
+                             (/ (* row-sum col-sum) total-sum))))
         p (v->p :chi-sq chi-sq :DF DF :two-sided? two-sided?)
-        reject (< p alpha)]
+        reject (< p alpha)
+        ]
     (table reject p chi-sq DF)))
