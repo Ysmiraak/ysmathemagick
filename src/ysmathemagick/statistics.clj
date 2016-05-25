@@ -51,13 +51,13 @@
   Calculates the p-value from some other value v in
   distribution ∈ {:t, :norm, :chi-sq}.
   " [distribution v
-     & {:keys [DF two-sided?] :or {DF 1 two-sided? false}}]
+     & {:keys [DF two-sided?] :or {DF 1 two-sided? true}}]
   (let [CDF (case distribution
               :t incanter.stats/cdf-t
               :norm incanter.stats/cdf-normal
               :chi-sq incanter.stats/cdf-chisq)
         prob (CDF (m/abs v) :df DF)]
-    (* (if two-sided? 1 2) (- 1 prob))))
+    (* (if two-sided? 2 1) (- 1 prob))))
 
 (defn Z-test "
   Test the hypothesis that the sample of 'size and 'mean comes from
@@ -65,13 +65,13 @@
 
   (Z-test 10 105 100 13)
   =>
-  {:reject false, :p 0.22388565069472577, :Z 1.2162606385262997, :Cohen-s_d 5/13}
+  {:reject false, :p 0.11194282534736288, :Z 1.2162606385262997, :Cohen-s_d 5/13}
 
   (Z-test 100 105 100 13)
   =>
-  {:reject true, :p 1.1998644089783461E-4, :Z 3.846153846153846, :Cohen-s_d 5/13}
+  {:reject true, :p 5.9993220448917306E-5, :Z 3.846153846153846, :Cohen-s_d 5/13}
   " [size mean μ σ
-     & {:keys [alpha two-sided?] :or {alpha 0.01 two-sided? false}}]
+     & {:keys [alpha two-sided?] :or {alpha 0.01 two-sided? true}}]
   (let [RMSE (/ σ (m/sqrt size))
         Z (/ (- mean μ) RMSE)
         p (v->p :norm Z :two-sided? two-sided?)
@@ -88,15 +88,20 @@
         [size mean sd] (map #(% sample) [count s/mean s/sd])]
     (t-test size mean sd population-mean))
   =>
-  {:reject true, :p 0.0018045343966888172, :t 4.367161585455664, :DF 9}
+  {:reject true, :p 9.022671983444086E-4, :t 4.367161585455664, :DF 9}
   " [size mean sd μ
-     & {:keys [alpha two-sided?] :or {alpha 0.01 two-sided? false}}]
+     & {:keys [alpha two-sided?] :or {alpha 0.01 two-sided? true}}]
   (let [DF (dec size)
         SEM (/ sd (m/sqrt size))
         t (/ (- mean μ) SEM)
         p (v->p :t t :DF DF :two-sided? two-sided?)
         reject (< p alpha)]
     (table reject p t DF)))
+
+  (let [population-mean 100
+        sample [100 105 104 105 107 110 99 111 106 105]
+        [size mean sd] (map #(% sample) [count s/mean s/sd])]
+    (t-test size mean sd population-mean))
 
 (defn paired-t-test "
   Test the hypothesis that there is no difference between the two
@@ -106,7 +111,7 @@
                       [100 105 104 105 107 110 99 111 106 105]
                       [106 115 106 112 110 115 108 116 110 120]))
   =>
-  {:reject true, :p 4.325011389971767E-4, :t -5.400892783340812, :DF 9}
+  {:reject true, :p 2.1625056949858834E-4, :t -5.400892783340812, :DF 9}
   " [sample-diff
      & {:keys [alpha two-sided?] :or {alpha 0.01 two-sided? false}}]
   (let [[sample-size diff-mean diff-sd]
@@ -124,7 +129,7 @@
   
   (two-sample-t-test (fake-sample 8 190 9) (fake-sample 10 105 13))
   =>
-  {:reject true, :p 2.680522470654978E-11,:t 16.350689614778208, :DF 15.747261049437471}
+  {:reject true, :p 1.340261235327489E-11, :t 16.350689614778208, :DF 15.747261049437471}
   " [sample-1 sample-2
      & {:keys [alpha two-sided? pooled?]
         :or {alpha 0.01 two-sided? false pooled? false}}]
@@ -145,12 +150,12 @@
 (defn chi-square-test "
   Test the hypothesis that two categorical properties are independent.
   
-  (chi-square-test [[25 25][15 35]] :alpha 0.05 :two-sided? true)
+  (chi-square-test [[25 25][15 35]] :alpha 0.05)
   =>
   {:reject true, :p 0.041226833337163815, :chi-sq 25/6, :DF 1}
   " [contingency-table
      & {:keys [alpha two-sided?]
-        :or {alpha 0.01 two-sided? false}}]
+        :or {alpha 0.01}}]
   (assert (apply = (map count contingency-table)))
   (let [rows contingency-table
         cols (apply map vector rows)
@@ -164,7 +169,6 @@
                            (for [row rows cell row] cell)
                            (for [row-sum row-sums col-sum col-sums]
                              (/ (* row-sum col-sum) total-sum))))
-        p (v->p :chi-sq chi-sq :DF DF :two-sided? two-sided?)
-        reject (< p alpha)
-        ]
+        p (v->p :chi-sq chi-sq :DF DF :two-sided? false)
+        reject (< p alpha)]
     (table reject p chi-sq DF)))
