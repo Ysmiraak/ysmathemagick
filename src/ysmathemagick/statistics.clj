@@ -22,10 +22,12 @@
   based on the number of true positives, true negative, false
   positives, and false negatives.
 
-  (measures 7 1 9 3) => 
+  (measures 7 1 9 3)
+  => 
   {:precision 7/16, :recall 7/10, :accuracy 2/5, :f1-score 7/13}
 
-  (measures 1 7 3 9) => 
+  (measures 1 7 3 9)
+  => 
   {:precision 1/4, :recall 1/10, :accuracy 2/5, :f1-score 1/7}
   " [tp tn fp fn]
   (let [precision (/ tp (+ tp fp))
@@ -65,11 +67,11 @@
 
   (Z-test 10 105 100 13)
   =>
-  {:reject false, :p 0.11194282534736288, :Z 1.2162606385262997, :Cohen-s_d 5/13}
+  {:reject false, :p 0.22388565069472577, :Z 1.2162606385262997, :Cohen-s_d 5/13}
 
   (Z-test 100 105 100 13)
   =>
-  {:reject true, :p 5.9993220448917306E-5, :Z 3.846153846153846, :Cohen-s_d 5/13}
+  {:reject true, :p 1.1998644089783461E-4, :Z 3.846153846153846, :Cohen-s_d 5/13}
   " [size mean μ σ
      & {:keys [alpha two-sided?] :or {alpha 0.01 two-sided? true}}]
   (let [RMSE (/ σ (m/sqrt size))
@@ -88,7 +90,7 @@
         [size mean sd] (map #(% sample) [count s/mean s/sd])]
     (t-test size mean sd population-mean))
   =>
-  {:reject true, :p 9.022671983444086E-4, :t 4.367161585455664, :DF 9}
+  {:reject true, :p 0.0018045343966888172, :t 4.367161585455664, :DF 9}
   " [size mean sd μ
      & {:keys [alpha two-sided?] :or {alpha 0.01 two-sided? true}}]
   (let [DF (dec size)
