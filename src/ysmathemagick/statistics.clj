@@ -17,27 +17,6 @@
   (reduce / (reduce * (range (inc (- n k)) (inc n)))
           (range 1 (inc k))))
 
-(defn measures "
-  Returns the precision, recall, accuracy, and f1-score measures
-  based on the number of true positives, true negative, false
-  positives, and false negatives.
-
-  (measures 7 1 9 3)
-  => 
-  {:precision 7/16, :recall 7/10, :accuracy 2/5, :f1-score 7/13}
-
-  (measures 1 7 3 9)
-  => 
-  {:precision 1/4, :recall 1/10, :accuracy 2/5, :f1-score 1/7}
-  " [tp tn fp fn]
-  (let [precision (/ tp (+ tp fp))
-        recall    (/ tp (+ tp fn))
-        accuracy  (/ (+ tp tn)
-                     (+ tp tn fp fn))
-        f1-score  (/ (* 2 precision recall)
-                     (+ precision recall))]
-    (table precision recall accuracy f1-score)))
-
 (defn fake-sample
   "Returns a vector of numbers with size (minimally 2), mean, and sd."
   [size mean sd]
@@ -65,14 +44,14 @@
   Test the hypothesis that the sample of 'size and 'mean comes from
   a normal distribution with 'μ and 'σ as parameters.
 
-  (Z-test 10 105 100 13)
+  (Z-test 10 105 13 100)
   =>
   {:reject false, :p 0.22388565069472577, :Z 1.2162606385262997, :Cohen-s_d 5/13}
 
-  (Z-test 100 105 100 13)
+  (Z-test 100 105 13 100)
   =>
   {:reject true, :p 1.1998644089783461E-4, :Z 3.846153846153846, :Cohen-s_d 5/13}
-  " [size mean μ σ
+  " [size mean σ μ
      & {:keys [alpha two-sided?] :or {alpha 0.01 two-sided? true}}]
   (let [RMSE (/ σ (m/sqrt size))
         Z (/ (- mean μ) RMSE)
@@ -99,11 +78,6 @@
         p (v->p :t t :DF DF :two-sided? two-sided?)
         reject (< p alpha)]
     (table reject p t DF)))
-
-  (let [population-mean 100
-        sample [100 105 104 105 107 110 99 111 106 105]
-        [size mean sd] (map #(% sample) [count s/mean s/sd])]
-    (t-test size mean sd population-mean))
 
 (defn paired-t-test "
   Test the hypothesis that there is no difference between the two
@@ -156,8 +130,7 @@
   =>
   {:reject true, :p 0.041226833337163815, :chi-sq 25/6, :DF 1}
   " [contingency-table
-     & {:keys [alpha two-sided?]
-        :or {alpha 0.01}}]
+     & {:keys [alpha] :or {alpha 0.01}}]
   (assert (apply = (map count contingency-table)))
   (let [rows contingency-table
         cols (apply map vector rows)
