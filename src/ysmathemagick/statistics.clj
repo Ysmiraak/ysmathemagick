@@ -124,7 +124,7 @@
     (table reject p t DF)))
 
 (defn chi-square-test "
-  Test the hypothesis that two categorical properties are independent.
+  Test the hypothesis that two categorical variables are independent.
   
   (chi-square-test [[25 25][15 35]] :alpha 0.05)
   =>
@@ -147,3 +147,51 @@
         p (v->p :chi-sq chi-sq :DF DF :two-sided? false)
         reject (< p alpha)]
     (table reject p chi-sq DF)))
+
+(defn G-test "
+  Test the hypothesis that two categorical variables are independent.
+  
+  (G-test [[25 25][15 35]] :alpha 0.05)
+  =>
+  {:reject true, :p 0.04039573850405631, :G 4.201185140367425, :DF 1}
+  " [contingency-table
+     & {:keys [alpha] :or {alpha 0.01}}]
+  (assert (apply = (map count contingency-table)))
+  (let [rows contingency-table
+        cols (apply map vector rows)
+        [row-count row-sums col-count col-sums]
+        (for [t [rows cols] f [count #(map s/sum %)]] (f t))
+        total-sum (s/sum row-sums)
+        DF (* (dec row-count) (dec col-count))
+        formula (fn [observed expected]
+                  (* 2 observed (m/log (/ observed expected))))
+        G (s/sum (map formula
+                      (for [row rows cell row] cell)
+                      (for [row-sum row-sums col-sum col-sums]
+                        (/ (* row-sum col-sum) total-sum))))
+        p (v->p :chi-sq G :DF DF :two-sided? false)
+        reject (< p alpha)]
+    (table reject p G DF)))
+
+(defn log-likelihood-ratio "
+  Alternative method for calculatnig the G-value of two binary
+  categorial variables x and y.
+
+  (log-likelihood-ratio 40 50 25 100)
+  =>
+  4.201185140367414
+  " [x y xy n]
+  (let [-x (- n x)
+        y-x (- y xy)
+        py (/ y n)
+        py|x (/ xy x)
+        py|-x (/ y-x (- n x))]
+    (* -2
+       (- (+ (* xy (m/log py))
+             (* (- x xy) (m/log (- 1 py)))
+             (* y-x (m/log py))
+             (* (- -x y-x) (m/log (- 1 py))))
+          (+ (* xy (m/log py|x))
+             (* (- x xy) (m/log (- 1 py|x)))
+             (* y-x (m/log py|-x))
+             (* (- -x y-x) (m/log (- 1 py|-x))))))))
