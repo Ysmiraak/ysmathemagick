@@ -195,3 +195,40 @@
              (* (- x xy) (m/log (- 1 py|x)))
              (* y-x (m/log py|-x))
              (* (- -x y-x) (m/log (- 1 py|-x))))))))
+
+(defn hidden-markov-prob "
+  markov-model: hidden-state -> hidden-state -> probability;
+  likelihood-model: hidden-state -> observed-event -> likelihood;
+
+  (def markov-model
+    {:start {:hot 0.8
+             :cold 0.2}
+     :hot {:hot 0.7
+           :cold 0.3}
+     :cold {:hot 0.4
+            :cold 0.6}})
+  
+  (def likelihood-model
+    {:hot {1 0.2
+           2 0.4
+           3 0.4}
+     :cold {1 0.5
+            2 0.4
+            3 0.1}})
+  
+  (hidden-markov-prob markov-model likelihood-model [1 1 2])
+  =>
+  0.033760000000000005
+  " [markov-model likelihood-model observation-sequence]
+  (let [state+ (keys (markov-model :start))        
+        step-f (fn [state==prob o]
+                 (for [s' state+]
+                   [s' (->> (* p (get-in markov-model [s s']) l)
+                            (for [[s p] state==prob])
+                            (let [l (get-in likelihood-model [s' o])])
+                            (reduce +))]))
+        |state+| (count state+)]
+    (->> observation-sequence
+         (reduce step-f (repeat |state+| [:start (/ |state+|)]))
+         (map peek)
+         (reduce +))))
