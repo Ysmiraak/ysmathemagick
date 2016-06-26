@@ -1,15 +1,18 @@
 (ns ysmathemagick.statistics
   (:require
    [clojure.core.matrix :as m]
-   (clojure.core.matrix
-    ;; operators linear dataset selection random
-    [stats :as s])
+   (clojure.core.matrix [stats :as s])
    incanter.stats))
 
 (defmacro table
   "(let [a 1 b 2 c 3] (table a b c)) => {:a 1, :b 2, :c 3}"
   [& symbols]
   `(zipmap (map keyword '~symbols) (list ~@symbols)))
+
+(defn float->string
+  "Formats the number n with floating precision f."
+  [f n]
+  (format (str "%." f \f) (float n)))
 
 (defn count-choose
   "Returns the number of n choose k."
@@ -40,17 +43,22 @@
         prob (cdf (m/abs v) :df df)]
     (* (if two-sided? 2 1) (- 1 prob))))
 
+
 (defn z-test "
   Test the hypothesis that the sample of 'size and 'mean comes from
   a normal distribution with 'μ and 'σ as parameters.
 
   (z-test 10 105 13 100)
-  =>
-  {:reject false, :p 0.22388565069472577, :z 1.2162606385262997, :Cohen-s_d 5/13}
+  => {:reject false,
+      :p 0.22388565069472577,
+      :z 1.2162606385262997,
+      :Cohen-s_d 5/13}
 
   (z-test 100 105 13 100)
-  =>
-  {:reject true, :p 1.1998644089783461E-4, :z 3.846153846153846, :Cohen-s_d 5/13}
+  => {:reject true,
+      :p 1.1998644089783461E-4,
+      :z 3.846153846153846,
+      :Cohen-s_d 5/13}
   " [size mean σ μ
      & {:keys [alpha two-sided?] :or {alpha 0.01 two-sided? true}}]
   (let [rmse (/ σ (m/sqrt size))
@@ -68,8 +76,10 @@
         sample [100 105 104 105 107 110 99 111 106 105]
         [size mean sd] (map #(% sample) [count s/mean s/sd])]
     (t-test size mean sd population-mean))
-  =>
-  {:reject true, :p 0.0018045343966888172, :t 4.367161585455664, :df 9}
+  => {:reject true,
+      :p 0.0018045343966888172,
+      :t 4.367161585455664,
+      :df 9}
   " [size mean sd μ
      & {:keys [alpha two-sided?] :or {alpha 0.01 two-sided? true}}]
   (let [df (dec size)
@@ -86,8 +96,10 @@
   (paired-t-test (map -
                       [100 105 104 105 107 110 99 111 106 105]
                       [106 115 106 112 110 115 108 116 110 120]))
-  =>
-  {:reject true, :p 2.1625056949858834E-4, :t -5.400892783340812, :df 9}
+  => {:reject true,
+      :p 2.1625056949858834E-4,
+      :t -5.400892783340812,
+      :df 9}
   " [sample-diff
      & {:keys [alpha two-sided?] :or {alpha 0.01 two-sided? false}}]
   (let [[sample-size diff-mean diff-sd]
@@ -102,10 +114,12 @@
 (defn two-sample-t-test "
   Test the hypothesis that there is no difference between the
   population (normally distributed) means of two independent samples.
-  
+
   (two-sample-t-test (fake-sample 8 190 9) (fake-sample 10 105 13))
-  =>
-  {:reject true, :p 1.340261235327489E-11, :t 16.350689614778208, :df 15.747261049437471}
+  => {:reject true,
+      :p 1.340261235327489E-11,
+      :t 16.350689614778208,
+      :df 15.747261049437471}
   " [sample-1 sample-2
      & {:keys [alpha two-sided? pooled?]
         :or {alpha 0.01 two-sided? false pooled? false}}]
@@ -125,10 +139,12 @@
 
 (defn chi-square-test "
   Test the hypothesis that two categorical variables are independent.
-  
-  (chi-square-test [[25 25][15 35]] :alpha 0.05)
-  =>
-  {:reject true, :p 0.041226833337163815, :chi-sq 25/6, :df 1}
+
+  (chi-square-test [[25 25][15 35]] :alpha 0.01)
+  => {:reject true,
+      :p 0.041226833337163815,
+      :chi-sq 25/6,
+      :df 1}
   " [contingency-table
      & {:keys [alpha] :or {alpha 0.01}}]
   (assert (apply = (map count contingency-table)))
@@ -150,10 +166,12 @@
 
 (defn g-test "
   Test the hypothesis that two categorical variables are independent.
-  
+
   (g-test [[25 25][15 35]] :alpha 0.05)
-  =>
-  {:reject true, :p 0.04039573850405631, :g 4.201185140367425, :df 1}
+  => {:reject true,
+      :p 0.04039573850405631,
+      :g 4.201185140367425,
+      :df 1}
   " [contingency-table
      & {:keys [alpha] :or {alpha 0.01}}]
   (assert (apply = (map count contingency-table)))
@@ -178,8 +196,7 @@
   categorial variables x and y.
 
   (log-likelihood-ratio 40 50 25 100)
-  =>
-  4.201185140367414
+  => 4.201185140367414
   " [x y xy n]
   (let [-x (- n x)
         y-x (- y xy)
@@ -207,7 +224,7 @@
            :cold 0.3}
      :cold {:hot 0.4
             :cold 0.6}})
-  
+
   (def likelihood-model
     {:hot {1 0.2
            2 0.4
@@ -215,20 +232,20 @@
      :cold {1 0.5
             2 0.4
             3 0.1}})
-  
+
   (hidden-markov-prob markov-model likelihood-model [1 1 2])
-  =>
-  0.033760000000000005
+  => 0.033760000000000005
   " [markov-model likelihood-model observation-sequence]
-  (let [state+ (keys (markov-model :start))        
+  (let [state+ (keys (markov-model :start))
+        prior+ (repeat (count state+) [:start (/ (count state+))])
         step-f (fn [state==prob o]
                  (for [s' state+]
                    [s' (->> (* p (get-in markov-model [s s']) l)
                             (for [[s p] state==prob])
                             (let [l (get-in likelihood-model [s' o])])
-                            (reduce +))]))
-        |state+| (count state+)]
+                            (reduce +))]))]
+    (reduce step-f prior+ observation-sequence)
     (->> observation-sequence
-         (reduce step-f (repeat |state+| [:start (/ |state+|)]))
+         (reduce step-f prior+)
          (map peek)
          (reduce +))))
