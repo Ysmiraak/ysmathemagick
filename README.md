@@ -2,27 +2,23 @@
 
 My math exercises in Clojure.
 
-## Usage
+## Table of contents ##
 
-### core ###
+`core`
 
 My lambda calculus study notes.
 
-### Y ###
+`Y`
 
 My notes on various fixpoint combinators.
 
-### statistics ###
+`statistics`
 
 Functions for statistical analysis.
 
-### hasse-diagram ###
+`hasse-diagram`
 
 Functions for drawing Hasse diagrams when a relation function and the vertices are given.
-
-### wg-problem ###
-
-Using core.logic for finding the solution to a problem I encountered in my math course, WS 2015/16.
 
 ## License
 
