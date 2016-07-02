@@ -2,23 +2,24 @@
 
 My math exercises in Clojure.
 
-## Table of contents ##
+## Namespaces
 
-`core`
+* `core`
 
-My lambda calculus study notes.
+    My lambda calculus study notes.
 
-`Y`
+* `Y`
 
-My notes on various fixpoint combinators.
+    My notes on various fixpoint combinators.
 
-`statistics`
+* `statistics`
 
-Functions for statistical analysis.
+    Functions for statistical analysis.
 
-`hasse-diagram`
+* `hasse-diagram`
 
-Functions for drawing Hasse diagrams when a relation function and the vertices are given.
+    Functions for drawing Hasse diagrams when a relation function and
+    the vertices are given.
 
 ## License
 
