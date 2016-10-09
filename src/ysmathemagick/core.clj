@@ -1,9 +1,8 @@
-(ns ysmathemagick.core)
+(ns ysmathemagick.core "my study notes on lambda calculus.")
 
 (defmacro λ
   "lambda expression"
-  [f & args]
-  `(fn [~f] ~@args))
+  [var & exp] `(fn [~var] ~@exp))
 
 (def lexicon
   "decodes Church encoding"
@@ -11,8 +10,8 @@
 
 (defn β
   "beta reduction (with decoding)"
-  [& args]
-  (let [r (reduce #(%1 %2) args)]
+  [f & fs]
+  (let [r (reduce (fn [a b] (a b)) f fs)]
     (@lexicon r r)))
 
 ;;;;;;;;;;;;;;;;;;;;;
@@ -25,17 +24,24 @@
 (def NOT "λc.λa.λb.c b a" (λ c (λ a (λ b ((c b) a)))))
 (swap! lexicon assoc T :true F :false IF :if NOT :not)
 
-(β IF  T T F)
-(β IF  F T F)
-(β NOT T T F)
-(β NOT F T F)
+(comment
+  (β IF  T T F)
+  => :true
+  (β IF  F T F)
+  => :false
+  (β NOT T T F)
+  => :false
+  (β NOT F T F)
+  => :true)
 
-;; NOTE: lisp 'if is not defined this way
-(if true (/ 1 1) (/ 1 0)) ;; => 1
-;; (β IF T (/ 1 1) (/ 1 0)) ;; => ArithmeticException Divide by zero
-;; because lisp used applicative order and not normal order
-;; because lisp is a practical language, hence
-;; https://en.wikipedia.org/wiki/McCarthy_Formalism
+;; note: clojure 'if is not defined this way
+(comment
+  (if true (/ 1 1) (/ 1 0))
+  => 1)
+(comment
+  (β IF T (/ 1 1) (/ 1 0))
+  => "ArithmeticException Divide by zero")
+;; because clojure evals in applicative order and not normal order
 
 ;;;;;;;;;;;;;;;;;;;;;;;
 ;; logical operators ;;
@@ -46,11 +52,20 @@
 (def OR  "λp.λq.p p q" (λ p (λ q ((p p) q))))
 (swap! lexicon assoc AND :and OR :or)
 
-(β AND T T)
-(β AND T F)
-(β AND F T)
-(β AND F F)
-(β OR  T T)
-(β OR  T F)
-(β OR  F T)
-(β OR  F F)
+(comment
+  (β AND T T)
+  => :true
+  (β AND T F)
+  => :false
+  (β AND F T)
+  => :false
+  (β AND F F)
+  => :false
+  (β OR  T T)
+  => :true
+  (β OR  T F)
+  => :true
+  (β OR  F T)
+  => :true
+  (β OR  F F)
+  => :false)

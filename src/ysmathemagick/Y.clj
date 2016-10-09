@@ -1,4 +1,5 @@
 (ns ysmathemagick.Y
+  "my study notes on various fixpoint combinators."
   (:use [ysmathemagick.core :only [λ]]))
 
 (defn factorial
@@ -14,7 +15,9 @@
      (let [f (λ n ((self self) n))]
        (λ n (if (zero? n) 1 (* n (f (dec n))))))))
 
-(map (fac' fac') (range 7))
+(comment
+  (map (fac' fac') (range 7))
+  => (1 1 2 6 24 120 720))
 
 ;; this kind of self application (f f) can be regularly replaced
 ;; by the application of a fixpoint combinator y as (y f)
@@ -23,19 +26,21 @@
   "this non-recursive function can be turned
   into a recursive factorial function
   by a fixpoint combinator y"
-  (λ f
-     (λ n
-        (if (zero? n) 1 (* n (f (dec n)))))))
+  (λ f (λ n (if (zero? n) 1 (* n (f (dec n)))))))
 
 ;; since we want (y f) = (f (y f))
 ;; (defn y [f] (f (y f))) should work, if clojure uses normal order
 ;; but still, we could have this
 (defn υ [f] (f #((υ f) %)))
-(map (υ fac) (range 7))
+(comment
+  (map (υ fac) (range 7))
+  => (1 1 2 6 24 120 720))
 ;; because (y f) = (λ v ((y f) v))
 ;; and that the wrapper λv delays evaluation
 (defn υ' [f] #((f (υ' f)) %)) ;; works as well
-(map (υ' fac) (range 7))
+(comment
+  (map (υ' fac) (range 7))
+  => (1 1 2 6 24 120 720))
 ;; however, this y is not a combinator since y is unbound
 
 (def ϒ
@@ -44,7 +49,10 @@
   with a wrapper λv for delaying evaluation"
   (λ f ((λ x (f (x x)))
         (λ x (f (λ v ((x x) v)))))))
-(map (ϒ fac) (range 7))
+
+(comment
+  (map (ϒ fac) (range 7))
+  => (1 1 2 6 24 120 720))
 
 (def Z
   "the Z combinator, the equivalent form of the ϒ combinator
@@ -52,7 +60,10 @@
   λf.(λx.f (λv.((x x) v))) (λx.f (λv.((x x) v)))"
   (λ f ((λ x (f (λ v ((x x) v))))
         (λ x (f (λ v ((x x) v)))))))
-(map (Z fac) (range 7))
+
+(comment
+  (map (Z fac) (range 7))
+  => (1 1 2 6 24 120 720))
 
 (def ϒ'
   "the simpler equivalent form of the ϒ combinator
@@ -62,7 +73,10 @@
   http://mvanier.livejournal.com/2897.html"
   (λ f ((λ x (x x))
         (λ x (f (λ v ((x x) v)))))))
-(map (ϒ' fac) (range 7))
+
+(comment
+  (map (ϒ' fac) (range 7))
+  => (1 1 2 6 24 120 720))
 
 ;; the set of fixed-point combinators of untyped lambda calculus
 ;; is recursively enumerable (Mayer Goldberg, 2005)
@@ -74,7 +88,10 @@
   Special property: (Θ f) ->β (f (Θ f))"
   ((λ x (λ y (y ((x x) y))))
    (λ x (λ y (y (λ v (((x x) y) v)))))))
-(map (Θ fac) (range 7))
+
+(comment
+  (map (Θ fac) (range 7))
+  => (1 1 2 6 24 120 720))
 
 (def Θ'
   "the call-by-value form of the Θ combinator
@@ -82,7 +99,10 @@
   (λx. λy. (y (λv. x x y v))) (λx. λy. (y (λv. x x y v)))"
   ((λ x (λ y (y (λ v (((x x) y) v)))))
    (λ x (λ y (y (λ v (((x x) y) v)))))))
-(map (Θ' fac) (range 7))
+
+(comment
+  (map (Θ' fac) (range 7))
+  => (1 1 2 6 24 120 720))
 
 (def SK-ϒ
   "the simplest fixed point combinator in the SK-calculus
@@ -90,4 +110,7 @@
   with a wrapper λv for delaying evaluation"
   ((λ x (λ y ((x y) x)))
    (λ y (λ x (y (λ v (((x y) x) v)))))))
-(map (SK-ϒ fac) (range 7))
+
+(comment
+  (map (SK-ϒ fac) (range 7))
+  => (1 1 2 6 24 120 720))

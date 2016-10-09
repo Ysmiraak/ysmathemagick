@@ -1,24 +1,24 @@
 # ysmathemagick
 
-My math exercises in Clojure.
+my math exercises in clojure.
 
-## Namespaces
+## namespaces
 
 * `core`
 
-    My lambda calculus study notes.
+    my study notes on lambda calculus.
 
 * `Y`
 
-    My notes on various fixpoint combinators.
+    my study notes on various fixpoint combinators.
 
 * `statistics`
 
-    Functions for statistical analysis.
+    functions for statistical analysis.
 
 * `hasse-diagram`
 
-    Functions for drawing Hasse diagrams when a relation function and
+    functions for drawing hasse diagrams when a relation function and
     the vertices are given.
 
 ## License
