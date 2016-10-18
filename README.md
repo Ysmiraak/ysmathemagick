@@ -12,14 +12,14 @@ my math exercises in clojure.
 
     my study notes on various fixpoint combinators.
 
-* `statistics`
-
-    functions for statistical analysis.
-
 * `hasse-diagram`
 
     functions for drawing hasse diagrams when a relation function and
     the vertices are given.
+
+* `statistics`
+
+    functions for statistical analysis.
 
 ## License
 

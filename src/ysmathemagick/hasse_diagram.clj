@@ -1,7 +1,7 @@
 (ns ysmathemagick.hasse-diagram
   "functions for drawing hasse diagrams when a relation function and the vertices
   are given."
-  (:use [clojure.set :only [union difference]]))
+  (:require [clojure.set :as set]))
 
 (defn transitive-reduce
   "performs transitive reduction on `dag`, which must be a map with keys
@@ -12,8 +12,8 @@
      (assoc dag fro
             (->> (map dag tos)
                  (remove nil?)
-                 (apply union) 
-                 (difference tos))))
+                 (apply set/union) 
+                 (set/difference tos))))
    dag dag))
 
 (defn form-hasse-graph
@@ -23,7 +23,7 @@
   (->> (for [f vs t vs]
          (if (and (not= f t) (rf f t))
            {f #{t}} {}))
-       (apply merge-with union)
+       (apply merge-with set/union)
        transitive-reduce))
 
 (defn print-in-dot
