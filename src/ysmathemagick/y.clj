@@ -1,4 +1,4 @@
-(ns ysmathemagick.Y
+(ns ysmathemagick.y
   "my study notes on various fixpoint combinators."
   (:use [ysmathemagick.core :only [λ]]))
 
